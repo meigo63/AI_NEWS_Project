@@ -21,4 +21,5 @@ def clean_text(text):
 df['cleaned'] = df['text'].apply(clean_text)
 
 print("Data cleaned successfully ✅")
-df.to_csv("cleaned_fake_news_dataset (1).csv", index=False)
+df.to_csv("D:\AI_NEWS_Project\Processed_data\cleaned_fake_news_dataset (1).csv", index=False)
+
