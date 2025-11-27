@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Classify — AI News System{% endblock %}
+
+{% block content %}
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3 class="card-title">Classify News Article</h3>
+      <p class="text-muted">Paste an article or upload a text / PDF file — the model is a placeholder for now.</p>
+
+      <form method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="article_text" class="form-label">Article text</label>
+          <textarea class="form-control" id="article_text" name="article_text" rows="8" placeholder="Paste article text here..."></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label for="file_upload" class="form-label">Upload file (txt/pdf) — placeholder only</label>
+          <input class="form-control" type="file" id="file_upload" name="file_upload" accept=".txt,.pdf">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <a class="btn btn-link" href="{{ url_for('index') }}">Back</a>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}

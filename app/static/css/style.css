@@ -1,0 +1,18 @@
+/* Small custom styles to complement Bootstrap */
+
+body {
+  background: #f7f9fc;
+}
+
+.navbar-brand {
+  font-weight: 700;
+}
+
+.card {
+  border-radius: 0.6rem;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

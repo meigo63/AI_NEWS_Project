@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Fake News Detection — AI News System{% endblock %}
+
+{% block content %}
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3 class="card-title">Fake News Detection</h3>
+      <p class="text-muted">Paste the news text or upload a file. The detection model is a placeholder for now and returns a sample JSON structure.</p>
+
+      <form method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="news_text" class="form-label">News text</label>
+          <textarea class="form-control" id="news_text" name="news_text" rows="7" placeholder="Paste news here..."></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label for="file_upload" class="form-label">Upload file (txt/pdf) — placeholder only</label>
+          <input class="form-control" type="file" id="file_upload" name="file_upload" accept=".txt,.pdf">
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Check</button>
+          <a class="btn btn-link" href="{{ url_for('index') }}">Back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}

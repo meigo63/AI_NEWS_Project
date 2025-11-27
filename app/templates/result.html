@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Result — AI News System{% endblock %}
+
+{% block content %}
+  <h3>{{ title }}</h3>
+
+  <div class="row mt-4">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Prediction</h5>
+          <pre class="bg-light p-3 rounded">{{ result | tojson(indent=2) }}</pre>
+
+          <p class="text-muted small mt-2">If this were a real model, this area would show predictions and a link to explainability output (LIME/SHAP).</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2 text-muted">Model status</h6>
+          <div class="alert alert-warning">
+            Model pending — you will integrate it later.
+          </div>
+
+          <p class="small text-muted">This placeholder indicates where the model and explainability dashboard will appear.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <a class="btn btn-outline-secondary" href="{{ url_for('index') }}">Home</a>
+    <a class="btn btn-primary" href="{{ url_for('classify') }}">Classify another</a>
+  </div>
+
+{% endblock %}

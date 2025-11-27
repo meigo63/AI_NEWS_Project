@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Home — AI News System{% endblock %}
+
+{% block content %}
+  <div class="row align-items-center">
+    <div class="col-lg-7">
+      <h1 class="display-5">AI-Based News Classification & Fake News Detection</h1>
+      <p class="lead">This web application is a front-end scaffold for your graduation project. Models are training separately — the UI, routes and placeholders are ready for later integration (classification, detection, explainability).</p>
+
+      <div class="mt-4">
+        <a class="btn btn-primary btn-lg me-2" href="{{ url_for('classify') }}">Classify News Article</a>
+        <a class="btn btn-outline-primary btn-lg" href="{{ url_for('detect') }}">Fake News Detection</a>
+      </div>
+
+      <hr class="my-4">
+      <p class="text-muted small">The models and explainability modules are placeholders. When ready, you will integrate trained models and LIME/SHAP explainability into the backend.</p>
+    </div>
+
+    <div class="col-lg-5 d-none d-lg-block">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4 text-center">
+          <h5 class="card-title">Project Overview</h5>
+          <p class="card-text">Upload or paste a news article to get predicted category or fake/real assessment. Currently returns placeholder JSON-like results while models are being trained.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
