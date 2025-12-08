@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Admin Dashboard</h2>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card bg-primary text-white">
+      <div class="card-body">
+        <h5 class="card-title">Total Users</h5>
+        <p class="card-text display-6">{{ stats.total_users }}</p>
+        <small>{{ stats.admin_count }} admin, {{ stats.user_count }} users</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-success text-white">
+      <div class="card-body">
+        <h5 class="card-title">Total Classifications</h5>
+        <p class="card-text display-6">{{ stats.total_results }}</p>
+        <small>Last 24h: {{ stats.results_last_24h }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-info text-white">
+      <div class="card-body">
+        <h5 class="card-title">Real vs Fake</h5>
+        <p class="card-text">Real: {{ stats.real_count }} | Fake: {{ stats.fake_count }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-warning text-dark">
+      <div class="card-body">
+        <h5 class="card-title">Categories</h5>
+        <p class="card-text display-6">{{ stats.total_categories }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-12">
+    <h4>System Actions</h4>
+    <a class="btn btn-primary" href="/admin/users">Manage Users</a>
+    <a class="btn btn-secondary" href="/admin/results">View Results</a>
+    <a class="btn btn-secondary" href="/admin/categories">Manage Categories</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <h4>Recent Classifications</h4>
+    <table class="table table-sm">
+      <thead>
+        <tr><th>User</th><th>Category</th><th>Fake</th><th>Time</th></tr>
+      </thead>
+      <tbody>
+        {% for r in recent_results %}
+          <tr>
+            <td>{{ r.user.name if r.user else 'Unknown' }}</td>
+            <td>{{ r.predicted_category }}</td>
+            <td>{{ r.fake_news_label }}</td>
+            <td>{{ r.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

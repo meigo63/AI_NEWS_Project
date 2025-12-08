@@ -1,18 +1,30 @@
-/* Small custom styles to complement Bootstrap */
-
-body {
-  background: #f7f9fc;
+:root[data-theme='light']{
+  --bg: #ffffff;
+  --fg: #212529;
+  --navbar-text: #212529;
 }
-
-.navbar-brand {
-  font-weight: 700;
+:root[data-theme='dark']{
+  --bg: #121212;
+  --fg: #e9ecef;
+  --navbar-text: #ffffff;
 }
-
-.card {
-  border-radius: 0.6rem;
+body{
+  background: var(--bg);
+  color: var(--fg);
 }
-
-pre {
-  white-space: pre-wrap;
-  word-break: break-word;
+.navbar{
+  background: var(--bg) !important;
+  color: var(--navbar-text) !important;
+}
+.navbar-light .navbar-brand,
+.navbar-light .navbar-nav .nav-link {
+  color: var(--navbar-text) !important;
+}
+.navbar-light .navbar-nav .nav-link:hover {
+  color: var(--navbar-text) !important;
+  opacity: 0.8;
+}
+.card{
+  background: var(--bg) !important;
+  color: var(--fg) !important;
 }

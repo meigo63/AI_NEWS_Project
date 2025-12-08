@@ -1,28 +1,92 @@
 {% extends 'base.html' %}
-
-{% block title %}Classify — AI News System{% endblock %}
-
 {% block content %}
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h3 class="card-title">Classify News Article</h3>
-      <p class="text-muted">Paste an article or upload a text / PDF file — the model is a placeholder for now.</p>
+<div class="row">
+  <div class="col-md-8">
+    <h2>Unified Classification</h2>
+    
+    {% if remaining_text %}
+      <div class="alert alert-info">
+        <strong>Note:</strong> {{ remaining_text }}
+      </div>
+    {% endif %}
+    
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label">Article Text</label>
+        <textarea class="form-control" name="article_text" rows="8" required></textarea>
+      </div>
+      <button class="btn btn-primary">Classify</button>
+      {% if not current_user.is_authenticated %}
+        <p class="text-muted mt-2"><small>Try one classification for free. <a href="/login">Login</a> to save results.</small></p>
+      {% endif %}
+    </form>
 
-      <form method="post" enctype="multipart/form-data">
-        <div class="mb-3">
-          <label for="article_text" class="form-label">Article text</label>
-          <textarea class="form-control" id="article_text" name="article_text" rows="8" placeholder="Paste article text here..."></textarea>
+    {% if result %}
+      <hr>
+      <h4>Results</h4>
+      <div class="card">
+        <div class="card-body">
+          <p><strong>Category:</strong> <span class="badge bg-primary">{{ result.predicted_category }}</span></p>
+          <p><strong>Confidence:</strong> {{ "%.2f"|format(result.category_confidence * 100) }}%</p>
+          <hr>
+          <p><strong>Fake/Real:</strong> 
+            {% if result.fake_news_label == 'fake' %}
+              <span class="badge bg-danger">FAKE</span>
+            {% else %}
+              <span class="badge bg-success">REAL</span>
+            {% endif %}
+          </p>
+          <p><strong>Fake Confidence:</strong> {{ "%.2f"|format(result.fake_confidence * 100) }}%</p>
+          
+          {% if is_anonymous %}
+            <hr>
+            <div class="alert alert-warning">
+              <strong>This classification was not saved.</strong> <a href="/login">Login or register</a> to save your results and see your history.
+            </div>
+          {% else %}
+            <p class="text-success"><small>✓ Saved to your history</small></p>
+          {% endif %}
         </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
 
-        <div class="mb-3">
-          <label for="file_upload" class="form-label">Upload file (txt/pdf) — placeholder only</label>
-          <input class="form-control" type="file" id="file_upload" name="file_upload" accept=".txt,.pdf">
-        </div>
-
-        <button type="submit" class="btn btn-primary">Submit</button>
-        <a class="btn btn-link" href="{{ url_for('index') }}">Back</a>
-      </form>
+{% if current_user.is_authenticated and user_history %}
+  <div class="row mt-4">
+    <div class="col-md-12">
+      <h4>Your Classification History</h4>
+      <table class="table table-striped table-sm">
+        <thead>
+          <tr>
+            <th>Article</th>
+            <th>Category</th>
+            <th>Fake/Real</th>
+            <th>Category Confidence</th>
+            <th>Fake Confidence</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for hist in user_history %}
+            <tr>
+              <td><small>{{ hist.article_text[:40] }}{% if hist.article_text|length > 40 %}...{% endif %}</small></td>
+              <td><span class="badge bg-info">{{ hist.predicted_category }}</span></td>
+              <td>
+                {% if hist.fake_news_label == 'fake' %}
+                  <span class="badge bg-danger">FAKE</span>
+                {% else %}
+                  <span class="badge bg-success">REAL</span>
+                {% endif %}
+              </td>
+              <td>{{ "%.1f"|format(hist.category_confidence * 100 if hist.category_confidence else 0) }}%</td>
+              <td>{{ "%.1f"|format(hist.fake_confidence * 100 if hist.fake_confidence else 0) }}%</td>
+              <td><small>{{ hist.timestamp.strftime('%Y-%m-%d %H:%M') }}</small></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
-
+{% endif %}
 {% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>All Classification Results</h2>
+<p><strong>Total:</strong> {{ results|length }} classifications</p>
+
+<table class="table table-striped table-hover">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>User</th>
+      <th>Article</th>
+      <th>Category</th>
+      <th>Category Conf</th>
+      <th>Fake/Real</th>
+      <th>Fake Conf</th>
+      <th>Date</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in results %}
+      <tr>
+        <td><small>#{{ r.id }}</small></td>
+        <td>
+          {% if r.user %}
+            <small>{{ r.user.name }}</small>
+          {% else %}
+            <small><em>Anonymous</em></small>
+          {% endif %}
+        </td>
+        <td><small>{{ r.article_text[:40] }}{% if r.article_text|length > 40 %}...{% endif %}</small></td>
+        <td><span class="badge bg-info">{{ r.predicted_category }}</span></td>
+        <td>{{ "%.1f"|format(r.category_confidence * 100 if r.category_confidence else 0) }}%</td>
+        <td>
+          {% if r.fake_news_label == 'fake' %}
+            <span class="badge bg-danger">FAKE</span>
+          {% else %}
+            <span class="badge bg-success">REAL</span>
+          {% endif %}
+        </td>
+        <td>{{ "%.1f"|format(r.fake_confidence * 100 if r.fake_confidence else 0) }}%</td>
+        <td><small>{{ r.timestamp.strftime('%Y-%m-%d %H:%M') }}</small></td>
+        <td>
+          <form method="post" action="/admin/results/delete/{{ r.id }}" style="display:inline" 
+                onsubmit="return confirm('Delete this result?')">
+            <button class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

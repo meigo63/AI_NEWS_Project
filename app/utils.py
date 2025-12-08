@@ -1,61 +1,29 @@
-"""Utility helpers used by the Flask app.
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+from flask import request, jsonify
+from .models import User
 
-Provides small, dependency-free helpers for text cleaning and file-reading so
-frontend + tests can function while the ML pieces are built.
-"""
+def hash_password(password: str) -> str:
+    return generate_password_hash(password)
 
-import re
-from typing import Optional
+def verify_password(hash: str, password: str) -> bool:
+    return check_password_hash(hash, password)
 
-
-def clean_text(text: str) -> str:
-    """Perform lightweight cleaning on article text.
-
-    This function keeps things simple and deterministic: trims whitespace,
-    collapses multiple spaces, and removes non-printable control characters.
-    """
-    if not isinstance(text, str):
-        return ""
-
-    # Normalize line breaks and whitespace
-    text = text.strip()
-    text = re.sub(r"\s+", " ", text)
-
-    # Remove control characters
-    text = re.sub(r"[\x00-\x1f\x7f]+", "", text)
-    return text
-
-
-def read_text_file(file_storage) -> Optional[str]:
-    """Read file content from a Flask FileStorage object.
-
-    Supports plain .txt files for now. PDFs are accepted but not parsed — this
-    returns a helpful placeholder message. The function never relies on heavy
-    external libraries so the app remains lightweight.
-    """
-    filename = getattr(file_storage, "filename", "")
-    if not filename:
-        return None
-
-    lower = filename.lower()
-    try:
-        if lower.endswith(".txt"):
-            raw = file_storage.stream.read()
-            # Flask FileStorage returns bytes — decode safely
-            try:
-                text = raw.decode("utf-8")
-            except Exception:
-                text = raw.decode("latin-1", errors="ignore")
-            return clean_text(text)
-
-        # PDF handling is intentionally a placeholder to avoid PDF libs here
-        if lower.endswith(".pdf"):
-            return (
-                "[PDF upload accepted] — PDF parsing is a placeholder in this demo."
-                " Integrate a library like PyPDF2 or pdfplumber later to read PDFs."
-            )
-
-    except Exception:
-        return None
-
-    return None
+def token_auth_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        auth = request.headers.get('Authorization') or request.headers.get('X-API-Token')
+        token = None
+        if auth:
+            if auth.startswith('Bearer '):
+                token = auth.split(' ',1)[1]
+            else:
+                token = auth
+        if not token:
+            return jsonify({'error':'token required'}), 401
+        user = User.query.filter_by(api_token=token).first()
+        if not user:
+            return jsonify({'error':'invalid token'}), 401
+        request.user = user
+        return fn(*args, **kwargs)
+    return wrapper
