@@ -4,16 +4,20 @@
   <div class="col-md-8">
     <h2>Unified Classification</h2>
     
-    {% if remaining_text %}
+    {% if remaining is not none %}
       <div class="alert alert-info">
-        <strong>Note:</strong> {{ remaining_text }}
+        <strong>Note:</strong> You have <strong>{{ remaining }}</strong> anonymous classifications remaining before you must register or login.
       </div>
     {% endif %}
     
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       <div class="mb-3">
         <label class="form-label">Article Text</label>
         <textarea class="form-control" name="article_text" rows="8" required></textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Or upload .txt file (max 10MB)</label>
+        <input class="form-control" type="file" name="file" accept=".txt">
       </div>
       <button class="btn btn-primary">Classify</button>
       {% if not current_user.is_authenticated %}

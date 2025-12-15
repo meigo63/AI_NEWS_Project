@@ -2,6 +2,7 @@ from datetime import datetime
 from .database import db
 from flask_login import UserMixin
 import uuid
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -18,6 +19,11 @@ class User(UserMixin, db.Model):
     def generate_token(self):
         self.api_token = uuid.uuid4().hex
         return self.api_token
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class ArticleResult(db.Model):
     __tablename__ = 'article_results'
@@ -35,3 +41,12 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
+
+class Feedback(db.Model):
+    __tablename__ = 'feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    feedback_text = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='feedbacks')

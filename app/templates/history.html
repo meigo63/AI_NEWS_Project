@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Your Classification History</h3>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Article</th>
+      <th>Category</th>
+      <th>Fake/Real</th>
+      <th>Category Confidence</th>
+      <th>Fake Confidence</th>
+      <th>Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in user_history %}
+      <tr>
+        <td><small>{{ r.article_text[:80] }}{% if r.article_text|length>80 %}...{% endif %}</small></td>
+        <td>{{ r.predicted_category }}</td>
+        <td>{% if r.fake_news_label=='fake' %}<span class="badge bg-danger">FAKE</span>{% else %}<span class="badge bg-success">REAL</span>{% endif %}</td>
+        <td>{{ "%.1f"|format(r.category_confidence*100 if r.category_confidence else 0) }}%</td>
+        <td>{{ "%.1f"|format(r.fake_confidence*100 if r.fake_confidence else 0) }}%</td>
+        <td><small>{{ r.timestamp.strftime('%Y-%m-%d %H:%M') }}</small></td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

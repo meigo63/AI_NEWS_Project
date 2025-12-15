@@ -4,6 +4,10 @@ from .models import User, ArticleResult, Category
 from .database import db
 from datetime import datetime, timedelta
 from sqlalchemy import func
+import logging
+
+logger = logging.getLogger(__name__)
+from .models import Feedback
 
 admin_bp = Blueprint('admin', __name__, template_folder='templates')
 
@@ -80,9 +84,12 @@ def add_user():
         return redirect(url_for('admin.users_view'))
     
     from .utils import hash_password
-    user = User(name=name, email=email, password_hash=hash_password(password), role=role)
+    user = User(name=name, email=email, role=role)
+    user.set_password(password)
+    user.generate_token()
     db.session.add(user)
     db.session.commit()
+    logger.info('Admin %s added user %s', current_user.email, user.email)
     flash(f'User {name} added successfully', 'success')
     return redirect(url_for('admin.users_view'))
 
@@ -97,6 +104,7 @@ def delete_user(user_id):
     user_name = u.name
     db.session.delete(u)
     db.session.commit()
+    logger.info('Admin %s deleted user %s', current_user.email, user_name)
     flash(f'User {user_name} deleted', 'info')
     return redirect(url_for('admin.users_view'))
 
@@ -109,6 +117,7 @@ def edit_user(user_id):
     if role in ['admin', 'user']:
         u.role = role
         db.session.commit()
+        logger.info('Admin %s updated role for user %s to %s', current_user.email, u.email, role)
         flash(f'{u.name} role updated to {role}', 'success')
     else:
         flash('Invalid role', 'danger')
@@ -128,6 +137,7 @@ def delete_result(res_id):
     r = ArticleResult.query.get_or_404(res_id)
     db.session.delete(r)
     db.session.commit()
+    logger.info('Admin %s deleted result id=%s', current_user.email, res_id)
     flash('Result deleted', 'info')
     return redirect(url_for('admin.results_view'))
 
@@ -150,6 +160,7 @@ def add_category():
         c = Category(name=name, description=description)
         db.session.add(c)
         db.session.commit()
+        logger.info('Admin %s added category %s', current_user.email, name)
         flash('Category added', 'success')
     return redirect(url_for('admin.categories_view'))
 
@@ -160,5 +171,25 @@ def delete_category(cat_id):
     c = Category.query.get_or_404(cat_id)
     db.session.delete(c)
     db.session.commit()
+    logger.info('Admin %s deleted category id=%s', current_user.email, cat_id)
     flash('Category deleted', 'info')
     return redirect(url_for('admin.categories_view'))
+
+
+@admin_bp.route('/feedback')
+@login_required
+@admin_required
+def feedback_view():
+    items = Feedback.query.order_by(Feedback.timestamp.desc()).all()
+    return render_template('admin_feedback.html', feedbacks=items)
+
+
+@admin_bp.route('/feedback/delete/<int:fb_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_feedback(fb_id):
+    fb = Feedback.query.get_or_404(fb_id)
+    db.session.delete(fb)
+    db.session.commit()
+    flash('Feedback deleted', 'info')
+    return redirect(url_for('admin.feedback_view'))

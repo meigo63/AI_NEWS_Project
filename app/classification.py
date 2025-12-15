@@ -1,15 +1,19 @@
 import os
 import pickle
-from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash, current_app
 from .models import ArticleResult
 from .database import db
-from flask_login import login_required, current_user
+from flask_login import current_user
+from .utils import sanitize_text, allowed_file
+from flask_login import login_required
+import logging
+
+logger = logging.getLogger(__name__)
 
 classify_bp = Blueprint('classify', __name__, template_folder='templates')
 
-MODEL_DIR = os.path.join(os.path.dirname(__file__), 'models')
-classifier = None
-fake_detector = None
+
+# per-request helpers will use app.config['ML_MODELS'] if present
 
 
 class HFSklearnWrapper:
@@ -111,7 +115,8 @@ def load_fake_news_model():
 
 
 def predict_category(text):
-    model = load_classification_model()
+    models = current_app.config.get('ML_MODELS', {})
+    model = models.get('classifier')
     if not model:
         return None, 0.0
     try:
@@ -128,7 +133,8 @@ def predict_category(text):
 
 
 def predict_fake_news(text):
-    model = load_fake_news_model()
+    models = current_app.config.get('ML_MODELS', {})
+    model = models.get('fake')
     if not model:
         return None, 0.0
     try:
@@ -147,56 +153,75 @@ def predict_fake_news(text):
 
 @classify_bp.route('/classify', methods=['GET', 'POST'])
 def classify_page():
-    # Check if user has used the anonymous one-time access
-    has_used_anonymous = session.get('used_anonymous_classify', False)
     is_authenticated = current_user.is_authenticated
-    
-    # If not logged in and already used anonymous access, require login
-    if not is_authenticated and has_used_anonymous:
-        flash('You have used your one-time classification. Please login to continue.', 'info')
-        return redirect(url_for('auth.login'))
-    
+    free_uses = session.get('free_uses', 0)
+    max_free = 3
+
     if request.method == 'POST':
-        text = request.form.get('article_text')
+        # enforce free limit for anonymous users
+        if not is_authenticated and free_uses >= max_free:
+            flash('Free classification limit reached. Please register or login to continue.', 'info')
+            return redirect(url_for('auth.login'))
+
+        # text input or file upload
+        text = ''
+        if 'file' in request.files and request.files['file'].filename:
+            f = request.files['file']
+            if not allowed_file(f.filename):
+                flash('Invalid file type. Only .txt allowed.', 'danger')
+                return redirect(url_for('classify.classify_page'))
+            try:
+                raw = f.read().decode('utf-8', errors='ignore')
+                text = sanitize_text(raw)
+            except Exception:
+                flash('Could not read uploaded file', 'danger')
+                return redirect(url_for('classify.classify_page'))
+        else:
+            text = sanitize_text(request.form.get('article_text', ''))
+
+        if not text:
+            flash('Empty input provided', 'warning')
+            return redirect(url_for('classify.classify_page'))
+
         cat, cat_conf = predict_category(text)
         fake_label, fake_conf = predict_fake_news(text)
+        logger.info('Classification requested user=%s anonymous=%s', current_user.get_id() if current_user.is_authenticated else None, not current_user.is_authenticated)
 
-        # Only save to database if logged in
+        result = ArticleResult(
+            user_id=current_user.id if is_authenticated else None,
+            article_text=text,
+            predicted_category=cat,
+            fake_news_label=(fake_label if fake_label in ('real', 'fake') else fake_label),
+            category_confidence=cat_conf,
+            fake_confidence=fake_conf,
+        )
+
         if is_authenticated:
-            result = ArticleResult(
-                user_id=current_user.id,
-                article_text=text,
-                predicted_category=cat,
-                fake_news_label=fake_label,
-                category_confidence=cat_conf,
-                fake_confidence=fake_conf
-            )
             db.session.add(result)
             db.session.commit()
         else:
-            # Mark anonymous use in session
-            session['used_anonymous_classify'] = True
-            result = ArticleResult(
-                user_id=None,
-                article_text=text,
-                predicted_category=cat,
-                fake_news_label=fake_label,
-                category_confidence=cat_conf,
-                fake_confidence=fake_conf
-            )
-            # Don't save anonymous results to DB
-            db.session.rollback()
+            # increment free uses and do not persist
+            session['free_uses'] = free_uses + 1
 
         return render_template('classify.html', result=result, is_anonymous=not is_authenticated)
-    
-    # Get user's classification history if logged in
+
+    # GET
     user_history = []
     if is_authenticated:
         user_history = ArticleResult.query.filter_by(user_id=current_user.id).order_by(ArticleResult.timestamp.desc()).all()
-    
-    # Show remaining uses message if not authenticated
-    remaining_text = "You have 1 free classification remaining. Please login after to save results."
-    return render_template('classify.html', remaining_text=remaining_text if not is_authenticated else None, user_history=user_history)
+
+    remaining = None
+    if not is_authenticated:
+        remaining = max(0, 3 - session.get('free_uses', 0))
+
+    return render_template('classify.html', remaining=remaining, user_history=user_history)
+
+
+@classify_bp.route('/history')
+@login_required
+def history_page():
+    user_history = ArticleResult.query.filter_by(user_id=current_user.id).order_by(ArticleResult.timestamp.desc()).all()
+    return render_template('history.html', user_history=user_history)
 
 
 @classify_bp.route('/api_classify', methods=['POST'])
@@ -204,12 +229,13 @@ def api_classify_route():
     data = request.json or {}
     text = data.get('text')
     if not text:
-        return jsonify({'error':'text required'}), 400
+        return jsonify({'error': 'text required'}), 400
+    text = sanitize_text(text)
     cat, cat_conf = predict_category(text)
     fake_label, fake_conf = predict_fake_news(text)
     return jsonify({
         'category': cat,
-        'category_confidence': cat_conf,
-        'fake_news_label': fake_label,
-        'fake_confidence': fake_conf
+        'category_confidence': float(cat_conf or 0.0),
+        'fake_news_label': (fake_label if fake_label in ('real', 'fake') else None),
+        'fake_confidence': float(fake_conf or 0.0),
     })

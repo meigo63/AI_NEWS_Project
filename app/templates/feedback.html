@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Submit Feedback</h3>
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">Your feedback</label>
+    <textarea class="form-control" name="feedback_text" rows="6" required></textarea>
+  </div>
+  <button class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}
