@@ -1,0 +1,30 @@
+:root[data-theme='light']{
+  --bg: #ffffff;
+  --fg: #212529;
+  --navbar-text: #212529;
+}
+:root[data-theme='dark']{
+  --bg: #121212;
+  --fg: #e9ecef;
+  --navbar-text: #ffffff;
+}
+body{
+  background: var(--bg);
+  color: var(--fg);
+}
+.navbar{
+  background: var(--bg) !important;
+  color: var(--navbar-text) !important;
+}
+.navbar-light .navbar-brand,
+.navbar-light .navbar-nav .nav-link {
+  color: var(--navbar-text) !important;
+}
+.navbar-light .navbar-nav .nav-link:hover {
+  color: var(--navbar-text) !important;
+  opacity: 0.8;
+}
+.card{
+  background: var(--bg) !important;
+  color: var(--fg) !important;
+}
