@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Categories</h2>
+<form method="post" action="/admin/categories/add">
+  <div class="row">
+    <div class="col-md-4"><input class="form-control" name="name" placeholder="Name" required></div>
+    <div class="col-md-6"><input class="form-control" name="description" placeholder="Description"></div>
+    <div class="col-md-2"><button class="btn btn-primary">Add</button></div>
+  </div>
+</form>
+<hr>
+<table class="table">
+  <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for c in categories %}
+      <tr>
+        <td>{{c.id}}</td>
+        <td>{{c.name}}</td>
+        <td>{{c.description}}</td>
+        <td>
+          <form method="post" action="/admin/categories/delete/{{c.id}}" style="display:inline">
+            <button class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

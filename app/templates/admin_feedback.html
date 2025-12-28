@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>User Feedback</h3>
+<table class="table table-striped">
+  <thead>
+    <tr><th>User</th><th>Feedback</th><th>Date</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {% for f in feedbacks %}
+      <tr>
+        <td>{{ f.user.name if f.user else f.user_id }}</td>
+        <td><small>{{ f.feedback_text }}</small></td>
+        <td><small>{{ f.timestamp.strftime('%Y-%m-%d %H:%M') }}</small></td>
+        <td>
+          <form method="post" action="/admin/feedback/delete/{{ f.id }}" style="display:inline">
+            <button class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

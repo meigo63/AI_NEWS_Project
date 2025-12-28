@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>User Management</h2>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h5>Add New User</h5>
+  </div>
+  <div class="card-body">
+    <form method="post" action="/admin/users/add">
+      <div class="row">
+        <div class="col-md-3">
+          <input class="form-control" name="name" placeholder="Name" required>
+        </div>
+        <div class="col-md-3">
+          <input class="form-control" name="email" type="email" placeholder="Email" required>
+        </div>
+        <div class="col-md-2">
+          <input class="form-control" name="password" type="password" placeholder="Password" required>
+        </div>
+        <div class="col-md-2">
+          <select class="form-control" name="role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-success btn-block">Add User</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<h4>Registered Users ({{ users|length }})</h4>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Created</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.name }}</td>
+        <td>{{ u.email }}</td>
+        <td>
+          <form method="post" action="/admin/users/edit/{{ u.id }}" style="display:inline">
+            <select class="form-select form-select-sm" name="role" onchange="this.form.submit()" {% if u.id == current_user.id %}disabled{% endif %}>
+              <option value="user" {% if u.role == 'user' %}selected{% endif %}>User</option>
+              <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+          </form>
+        </td>
+        <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+        <td>
+          <form method="post" action="/admin/users/delete/{{ u.id }}" style="display:inline" 
+                onsubmit="return confirm('Delete {{ u.name }}?')">
+            {% if u.id != current_user.id %}
+              <button class="btn btn-sm btn-danger">Delete</button>
+            {% else %}
+              <button class="btn btn-sm btn-secondary" disabled title="Cannot delete yourself">Delete</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

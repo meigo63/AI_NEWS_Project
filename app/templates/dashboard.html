@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h1>Welcome to News AI</h1>
+    <p>Classify news articles and detect fake news using our AI model.</p>
+    <a class="btn btn-primary btn-lg" href="/classify">Start Classification</a>
+  </div>
+</div>
+
+{% if current_user.is_authenticated %}
+  <hr>
+  <div class="row">
+    <div class="col-md-12">
+      <h3>Your Last 3 Classifications</h3>
+      {% if recent_results %}
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Article</th>
+              <th>Category</th>
+              <th>Fake/Real</th>
+              <th>Category Confidence</th>
+              <th>Fake Confidence</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for result in recent_results %}
+              <tr>
+                <td>
+                  <small>{{ result.article_text[:50] }}{% if result.article_text|length > 50 %}...{% endif %}</small>
+                </td>
+                <td>
+                  <span class="badge bg-info">{{ result.predicted_category }}</span>
+                </td>
+                <td>
+                  {% if result.fake_news_label == 'fake' %}
+                    <span class="badge bg-danger">FAKE</span>
+                  {% else %}
+                    <span class="badge bg-success">REAL</span>
+                  {% endif %}
+                </td>
+                <td>{{ "%.1f"|format(result.category_confidence * 100 if result.category_confidence else 0) }}%</td>
+                <td>{{ "%.1f"|format(result.fake_confidence * 100 if result.fake_confidence else 0) }}%</td>
+                <td><small>{{ result.timestamp.strftime('%Y-%m-%d %H:%M') }}</small></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <a class="btn btn-sm btn-outline-secondary" href="/classify">View Full History</a>
+      {% else %}
+        <div class="alert alert-info">
+          No classifications yet. <a href="/classify">Start classifying articles now!</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% else %}
+  <hr>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="alert alert-info">
+        <h5>Try it free!</h5>
+        <p>You can <a href="/classify">try one classification for free</a> without registering.</p>
+        <p><a href="/register">Register now</a> to save your results and access full history.</p>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2 class="mb-4">Unified News Classification</h2>
+        
+        {% if remaining is not none %}
+        <div class="alert alert-info shadow-sm">
+            <i class="fas fa-info-circle"></i> 
+            <strong>Note:</strong> You have <strong>{{ remaining }}</strong> anonymous classifications remaining. 
+            <a href="{{ url_for('auth.login') }}" class="alert-link">Login</a> to save results.
+        </div>
+        {% endif %}
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">Article Text</label>
+                        <textarea class="form-control" name="article_text" rows="8" 
+                                  placeholder="Paste your news article here..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">Or upload .txt file (max 10MB)</label>
+                        <input class="form-control" type="file" name="file" accept=".txt">
+                    </div>
+                    <button class="btn btn-primary btn-lg px-5" type="submit">Classify Now</button>
+                    
+                    {% if not current_user.is_authenticated %}
+                    <p class="text-muted mt-3 small">
+                        <i class="fas fa-lock"></i> <a href="/login">Login</a> to save results to your history.
+                    </p>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        {% if result %}
+        <div class="result-card shadow p-4 mb-4 bg-white rounded">
+          <h3>Classification Results</h3>
+          <p><strong>Category:</strong> {{ result.predicted_category }} ({{ (result.category_confidence * 100)|round(2) }}%)</p>
+          <p><strong>Authenticity:</strong> 
+            <span class="badge {% if result.fake_news_label == 'fake' %}bg-danger{% else %}bg-success{% endif %}">
+              {{ result.fake_news_label|upper }}
+            </span> 
+              ({{ (result.fake_confidence * 100)|round(2) }}%)
+          </p>
+
+          <hr>
+
+          <div id="xai-section">
+            {% if current_user.is_authenticated %}
+              <textarea id="hidden-article-text" style="display:none;">{{ result.article_text }}</textarea>
+
+              <button id="btn-explain" class="btn btn-info text-white" onclick="prepareExplanation()">
+                  <i class="fas fa-brain"></i> Explain this Result? (XAI)
+              </button>
+            
+              <div id="xai-content" class="mt-4" style="display:none;">
+                <div id="loading-spinner" class="text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p>Analyzing model reasoning... please wait (LIME simulation)</p>
+                </div>
+                <div id="xai-results-area"></div>
+              </div>
+            {% else %}
+              <div class="alert alert-warning">
+                <i class="fas fa-lock"></i> Want to know <strong>why</strong>? 
+                <a href="{{ url_for('auth.login') }}">Login</a> to see the detailed AI explanation (XAI).
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <script>
+        function prepareExplanation() {
+            const text = document.getElementById('hidden-article-text').value;
+            loadExplanation(text);
+        }
+
+        function loadExplanation(articleText) {
+            const contentDiv = document.getElementById('xai-content');
+            const resultsArea = document.getElementById('xai-results-area');
+            const btn = document.getElementById('btn-explain');
+            const spinner = document.getElementById('loading-spinner');
+
+            contentDiv.style.display = 'block';
+            resultsArea.innerHTML = '';
+            spinner.style.display = 'block';
+            btn.disabled = true;
+
+            fetch('/get_explanation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: articleText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                spinner.style.display = 'none';
+                if (data.error) {
+                    resultsArea.innerHTML = `<p class="text-danger">${data.error}</p>`;
+                } else {
+                    // إعادة بناء الكلمات المؤثرة كما كانت سابقاً (3 في كل صف)
+                    // ... داخل الجزء الخاص بـ .then(data => { ...
+                    // إضافة الكلمات (بشكلها الأصلي الذي طلبته)
+                    let wordsHtml = '<h4>Key Influential Words</h4><div class="row">';
+                    data.top_words.forEach(item => {
+                        let colorClass = item.impact === 'Fake' ? 'bg-light-orange' : 'bg-light-blue';
+                        let badgeClass = item.impact === 'Fake' ? 'bg-danger' : 'bg-primary';
+                        wordsHtml += `
+                            <div class="col-md-4 mb-2">
+                                <div class="p-2 border rounded shadow-sm ${colorClass}">
+                                    <strong>${item.word}</strong>
+                                    <span class="float-end badge ${badgeClass}">${item.impact}</span>
+                                </div>
+                            </div>`;
+                    });
+                    wordsHtml += '</div><hr><h4>Detailed Horizontal Analysis</h4>';
+
+                    // وضع الجدول داخل حاوية العرض الكامل
+                    resultsArea.innerHTML = wordsHtml + '<div class="lime-table-container" style="width: 100%;">' + data.explanation_html + '</div>';
+
+                    // تشغيل السكربتات (ضروري جداً لظهور الجدول)
+                    const scripts = resultsArea.getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const scriptTag = document.createElement('script');
+                        scriptTag.type = 'text/javascript';
+                        if (scripts[i].src) scriptTag.src = scripts[i].src;
+                        else scriptTag.textContent = scripts[i].textContent;
+                        document.body.appendChild(scriptTag);
+                    }
+                }
+            })
+            .catch(err => {
+                spinner.style.display = 'none';
+                resultsArea.innerHTML = '<p class="text-danger">Failed to load explanation.</p>';
+                btn.disabled = false;
+            });
+        }
+        </script>
+
+        <style>
+            .bg-light-orange { background-color: #fff3e0; border-left: 5px solid #ff9800; padding: 10px; }
+            .bg-light-blue { background-color: #e3f2fd; border-left: 5px solid #2196f3; padding: 10px; }
+            /* إجبار حاوية LIME على التمدد بكامل عرض الصفحة */
+            .lime-table-container {
+                width: 100% !important;
+                overflow-x: auto !important;
+                background-color: #fdfdfd;
+                padding: 20px;
+                border: 1px solid #eee;
+                border-radius: 12px;
+            }
+
+            /* استهداف الجداول والرسومات داخل LIME لجعلها عرضية */
+            .lime-table-container .svg-container, 
+            .lime-table-container svg {
+                width: 100% !important;  /* جعل الرسم البياني يمتد بالعرض */
+                display: block;
+            }
+
+            /* تحسين شكل النصوص المظللة داخل النص الأصلي */
+            .lime-table-container span {
+                padding: 2px 4px;
+                border-radius: 4px;
+            }
+
+            /* جعل الخطوط والأعمدة داخل LIME تأخذ مساحة عرضية أكبر */
+            .lime-table-container table {
+                width: 100% !important;
+                table-layout: fixed;
+            }
+        </style>
+            
+            
+    </div>
+</div>
+
+{% if current_user.is_authenticated and user_history %}
+<div class="row mt-5">
+    <div class="col-md-12">
+        <h4 class="mb-3">Your Classification History</h4>
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover bg-white mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Article (Preview)</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Confidence</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hist in user_history %}
+                    <tr>
+                        <td class="align-middle">
+                            <small class="text-muted">
+                                {{ hist.article_text[:60] }}{% if hist.article_text|length > 60 %}...{% endif %}
+                            </small>
+                        </td>
+                        <td class="align-middle"><span class="badge bg-primary">{{ hist.predicted_category }}</span></td>
+                        <td class="align-middle">
+                            {% if hist.fake_news_label == 'fake' %}
+                                <span class="badge bg-danger">FAKE</span>
+                            {% else %}
+                                <span class="badge bg-success">REAL</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            <small>{{ "%.1f"|format(hist.fake_confidence * 100) }}%</small>
+                        </td>
+                        <td class="align-middle">
+                            <small class="text-muted">{{ hist.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
