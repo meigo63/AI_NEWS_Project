@@ -1,0 +1,5 @@
+# Place your ML models here:
+# - classifier.pkl (sklearn pickle)
+# - classifier/ (HF model folder with config.json, tokenizer.json, safetensors)
+# - fake.pkl (sklearn pickle)
+# - fake/ (HF model folder with config.json, tokenizer.json, safetensors)
